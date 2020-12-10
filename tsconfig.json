@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "newLine": "lf",
+        "outDir": "dist",
+        "target": "ESNext",
+        "module": "ESNext",
+        "strictNullChecks": true,
+        "noImplicitReturns": true,
+        "moduleResolution": "Node",
+        "downlevelIteration": true
+    },
+    "include": ["src"]
+}

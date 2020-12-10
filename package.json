@@ -1,4 +1,10 @@
 {
     "license": "Unlicense",
-    "scripts": {}
+    "type": "module",
+    "scripts": {
+        "build": "tsc"
+    },
+    "devDependencies": {
+        "typescript": "^4.1.2"
+    }
 }
