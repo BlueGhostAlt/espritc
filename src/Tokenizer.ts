@@ -132,6 +132,9 @@ export class Tokenizer {
             case "\n":
                 this.line++
                 break
+            case '"':
+                this.string()
+                break
             default:
                 console.error(
                     `Unexpected character: "${character}"`
@@ -151,6 +154,16 @@ export class Tokenizer {
         return this.source.charAt(this.current)
     }
 
+    private match(expected: string) {
+        if (this.reachedEOF()) return false
+        if (this.source.charAt(this.current) !== expected) {
+            return false
+        }
+
+        this.current++
+        return true
+    }
+
     private addToken(tokenMetadata: TokenADT) {
         const lexeme = this.source.slice(
             this.start,
@@ -167,13 +180,24 @@ export class Tokenizer {
         this.tokens.push(token)
     }
 
-    private match(expected: string) {
-        if (this.reachedEOF()) return false
-        if (this.source.charAt(this.current) !== expected) {
-            return false
+    private string() {
+        while (this.peek() !== '"' && !this.reachedEOF()) {
+            if (this.peek() === "\n") this.line++
+            this.advance()
         }
 
-        this.current++
-        return true
+        if (this.reachedEOF()) {
+            console.error("Unterminated string literal.")
+            return
+        }
+
+        this.advance()
+
+        const literal = this.source.slice(
+            this.start + 1,
+            this.current - 1
+        )
+
+        this.addToken({ _type: "string", literal })
     }
 }
