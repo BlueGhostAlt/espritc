@@ -132,6 +132,18 @@ export class Tokenizer {
             case "\n":
                 this.line++
                 break
+            case "1":
+            case "2":
+            case "3":
+            case "4":
+            case "5":
+            case "6":
+            case "7":
+            case "8":
+            case "9":
+            case "0":
+                this.number()
+                break
             case '"':
                 this.string()
                 break
@@ -152,6 +164,14 @@ export class Tokenizer {
         if (this.reachedEOF()) return ""
 
         return this.source.charAt(this.current)
+    }
+
+    private peekNext() {
+        if (this.current + 1 >= this.source.length) {
+            return ""
+        }
+
+        return this.source.charAt(this.current + 1)
     }
 
     private match(expected: string) {
@@ -178,6 +198,30 @@ export class Tokenizer {
         }
 
         this.tokens.push(token)
+    }
+
+    private isDigit(character: string) {
+        return /[0-9]/.test(character)
+    }
+    private number() {
+        if (this.isDigit(this.peek())) this.advance()
+
+        if (
+            this.peek() === "." &&
+            this.isDigit(this.peekNext())
+        ) {
+            this.advance()
+
+            while (this.isDigit(this.peek())) this.advance()
+        }
+
+        const lexeme = this.source.slice(
+            this.start,
+            this.current
+        )
+        const literal = Number(lexeme)
+
+        this.addToken({ _type: "number", literal })
     }
 
     private string() {
