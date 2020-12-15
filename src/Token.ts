@@ -1,5 +1,7 @@
 import type { ADT } from "./types"
 
+type NumberKind = "decimal" | "exponential"
+
 export type TokenADT = ADT<{
     leftParen: {}
     rightParen: {}
@@ -21,7 +23,7 @@ export type TokenADT = ADT<{
     less: {}
     greaterEqual: {}
     greater: {}
-    number: { literal: number }
+    number: { literal: number; kind: NumberKind }
     string: { literal: string }
 }>
 

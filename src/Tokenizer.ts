@@ -155,8 +155,8 @@ export class Tokenizer {
         }
     }
 
-    private advance() {
-        this.current++
+    private advance(advanceBy = 1) {
+        this.current += advanceBy
         return this.source.charAt(this.current - 1)
     }
 
@@ -166,12 +166,12 @@ export class Tokenizer {
         return this.source.charAt(this.current)
     }
 
-    private peekNext() {
+    private peekNext(peekBy = 1) {
         if (this.current + 1 >= this.source.length) {
             return ""
         }
 
-        return this.source.charAt(this.current + 1)
+        return this.source.charAt(this.current + peekBy)
     }
 
     private match(expected: string) {
@@ -210,10 +210,27 @@ export class Tokenizer {
             this.peek() === "." &&
             this.isDigit(this.peekNext())
         ) {
-            console.log("I shouldn't be reached")
             this.advance()
 
             while (this.isDigit(this.peek())) this.advance()
+        }
+        if (this.peek().toLowerCase() === "e") {
+            if (this.isDigit(this.peekNext())) {
+                this.advance()
+
+                while (this.isDigit(this.peek())) {
+                    this.advance()
+                }
+            } else if (
+                this.peekNext() === "-" &&
+                this.isDigit(this.peekNext(2))
+            ) {
+                this.advance(2)
+
+                while (this.isDigit(this.peek())) {
+                    this.advance()
+                }
+            }
         }
 
         const lexeme = this.source.slice(
@@ -221,8 +238,11 @@ export class Tokenizer {
             this.current
         )
         const literal = Number(lexeme)
+        const kind = lexeme.toLowerCase().includes("e")
+            ? "exponential"
+            : "decimal"
 
-        this.addToken({ _type: "number", literal })
+        this.addToken({ _type: "number", literal, kind })
     }
 
     private string() {
