@@ -132,6 +132,9 @@ export class Tokenizer {
             case "\n":
                 this.line++
                 break
+            case "0":
+                this.leadingZeroNumber()
+                break
             case "1":
             case "2":
             case "3":
@@ -141,7 +144,6 @@ export class Tokenizer {
             case "7":
             case "8":
             case "9":
-            case "0":
                 this.number()
                 break
             case '"':
@@ -203,6 +205,9 @@ export class Tokenizer {
     private isDigit(character: string) {
         return /[0-9]/.test(character)
     }
+    private isBinaryDigit(character: string) {
+        return character === "0" || character === "1"
+    }
     private number() {
         while (this.isDigit(this.peek())) this.advance()
 
@@ -241,6 +246,31 @@ export class Tokenizer {
         const kind = lexeme.toLowerCase().includes("e")
             ? "exponential"
             : "decimal"
+
+        this.addToken({ _type: "number", literal, kind })
+    }
+
+    private leadingZeroNumber() {
+        if (this.peek().toLowerCase() === "b") {
+            if (this.isBinaryDigit(this.peekNext())) {
+                this.advance()
+
+                while (this.isBinaryDigit(this.peek())) {
+                    this.advance()
+                }
+            } else {
+                console.error("Binary digit expected")
+            }
+        } else {
+            return this.number()
+        }
+
+        const lexeme = this.source.slice(
+            this.start,
+            this.current
+        )
+        const literal = Number(lexeme)
+        const kind = "binary"
 
         this.addToken({ _type: "number", literal, kind })
     }

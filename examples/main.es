@@ -11,4 +11,6 @@
 2.5e2
 1e-3
 
+0b01111111100000000000000000000000 -- Binary literals
+
 "hello" -- String literals
