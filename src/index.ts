@@ -1,7 +1,16 @@
-import { add } from "./add"
+import { readFile } from "fs/promises"
 
-const one = Promise.resolve(1)
+import { Tokenizer } from "./Tokenizer"
 
-console.log(
-    `Hello from esprit! PI = ${add(await one, 2.14)}`
-)
+const input = await readFile("examples/main.es", "utf-8")
+
+const run = (source: string) => {
+    const scanner = new Tokenizer(source)
+    const tokens = scanner.scanTokens()
+
+    for (const token of tokens) {
+        console.log(token)
+    }
+}
+
+run(input)
