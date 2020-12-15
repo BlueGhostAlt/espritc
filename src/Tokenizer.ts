@@ -204,12 +204,13 @@ export class Tokenizer {
         return /[0-9]/.test(character)
     }
     private number() {
-        if (this.isDigit(this.peek())) this.advance()
+        while (this.isDigit(this.peek())) this.advance()
 
         if (
             this.peek() === "." &&
             this.isDigit(this.peekNext())
         ) {
+            console.log("I shouldn't be reached")
             this.advance()
 
             while (this.isDigit(this.peek())) this.advance()
