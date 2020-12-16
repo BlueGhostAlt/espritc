@@ -12,6 +12,7 @@
 1e-3
 
 0b01111111100000000000000000000000 -- Binary literals
-0o644 - Octal literals
+0o644 -- Octal literals
+0x123456789ABCDEF -- Hexadecimal literals
 
 "hello" -- String literals

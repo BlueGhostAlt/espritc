@@ -211,6 +211,9 @@ export class Tokenizer {
     private isOctalDigit(character: string) {
         return /[0-7]/.test(character)
     }
+    private isHexadecimalDigit(character: string) {
+        return /[0-9a-f]/i.test(character)
+    }
     private number() {
         while (this.isDigit(this.peek())) this.advance()
 
@@ -274,6 +277,18 @@ export class Tokenizer {
             } else {
                 console.error("Octal digit expected")
             }
+        } else if (this.peek().toLowerCase() === "x") {
+            if (this.isHexadecimalDigit(this.peekNext())) {
+                this.advance()
+
+                while (
+                    this.isHexadecimalDigit(this.peek())
+                ) {
+                    this.advance()
+                }
+            } else {
+                console.error("Hexadecimal digit expected")
+            }
         } else {
             return this.number()
         }
@@ -283,9 +298,13 @@ export class Tokenizer {
             this.current
         )
         const literal = Number(lexeme)
-        const kind = lexeme.toLowerCase().includes("b")
-            ? "binary"
-            : "octal"
+        const [, secondChar] = lexeme.toLowerCase()
+        const kind =
+            secondChar === "b"
+                ? "binary"
+                : secondChar === "o"
+                ? "octal"
+                : "hexadecimal"
 
         this.addToken({ _type: "number", literal, kind })
     }

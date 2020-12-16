@@ -5,6 +5,7 @@ type NumberKind =
     | "exponential"
     | "binary"
     | "octal"
+    | "hexadecimal"
 
 export type TokenADT = ADT<{
     leftParen: {}
