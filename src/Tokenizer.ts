@@ -176,9 +176,16 @@ export class Tokenizer {
         return this.source.charAt(this.current + peekBy)
     }
 
-    private match(expected: string) {
+    private match(expected: string, lowercase = false) {
         if (this.reachedEOF()) return false
-        if (this.source.charAt(this.current) !== expected) {
+
+        const character = this.source.charAt(this.current)
+        if (!lowercase && character !== expected) {
+            return false
+        } else if (
+            lowercase &&
+            character.toLowerCase() !== expected
+        ) {
             return false
         }
 
@@ -218,14 +225,14 @@ export class Tokenizer {
         while (this.isDigit(this.peek())) this.advance()
 
         if (
-            this.peek() === "." &&
+            this.match(".") &&
             this.isDigit(this.peekNext())
         ) {
             this.advance()
 
             while (this.isDigit(this.peek())) this.advance()
         }
-        if (this.peek().toLowerCase() === "e") {
+        if (this.match("e", true)) {
             if (this.isDigit(this.peekNext())) {
                 this.advance()
 
@@ -249,7 +256,7 @@ export class Tokenizer {
             this.current
         )
 
-        const bigInt = this.peek() === "n"
+        const bigInt = this.match("n")
         if (bigInt) this.advance()
 
         if (bigInt) {
@@ -278,7 +285,7 @@ export class Tokenizer {
     }
 
     private leadingZeroNumber() {
-        if (this.peek().toLowerCase() === "b") {
+        if (this.match("b", true)) {
             if (this.isBinaryDigit(this.peekNext())) {
                 this.advance()
 
@@ -288,7 +295,7 @@ export class Tokenizer {
             } else {
                 console.error("Binary digit expected")
             }
-        } else if (this.peek().toLowerCase() === "o") {
+        } else if (this.match("o", true)) {
             if (this.isOctalDigit(this.peekNext())) {
                 this.advance()
 
@@ -298,7 +305,7 @@ export class Tokenizer {
             } else {
                 console.error("Octal digit expected")
             }
-        } else if (this.peek().toLowerCase() === "x") {
+        } else if (this.match("x", true)) {
             if (this.isHexadecimalDigit(this.peekNext())) {
                 this.advance()
 
@@ -319,7 +326,7 @@ export class Tokenizer {
             this.current
         )
 
-        const bigInt = this.peek() === "n"
+        const bigInt = this.match("n")
         if (bigInt) this.advance()
 
         if (bigInt) {
