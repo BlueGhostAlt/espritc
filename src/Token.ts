@@ -1,6 +1,10 @@
 import type { ADT } from "./types"
 
-type NumberKind = "decimal" | "exponential" | "binary"
+type NumberKind =
+    | "decimal"
+    | "exponential"
+    | "binary"
+    | "octal"
 
 export type TokenADT = ADT<{
     leftParen: {}

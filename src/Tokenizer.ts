@@ -208,6 +208,9 @@ export class Tokenizer {
     private isBinaryDigit(character: string) {
         return character === "0" || character === "1"
     }
+    private isOctalDigit(character: string) {
+        return /[0-7]/.test(character)
+    }
     private number() {
         while (this.isDigit(this.peek())) this.advance()
 
@@ -261,6 +264,16 @@ export class Tokenizer {
             } else {
                 console.error("Binary digit expected")
             }
+        } else if (this.peek().toLowerCase() === "o") {
+            if (this.isOctalDigit(this.peekNext())) {
+                this.advance()
+
+                while (this.isOctalDigit(this.peek())) {
+                    this.advance()
+                }
+            } else {
+                console.error("Octal digit expected")
+            }
         } else {
             return this.number()
         }
@@ -270,7 +283,9 @@ export class Tokenizer {
             this.current
         )
         const literal = Number(lexeme)
-        const kind = "binary"
+        const kind = lexeme.toLowerCase().includes("b")
+            ? "binary"
+            : "octal"
 
         this.addToken({ _type: "number", literal, kind })
     }
