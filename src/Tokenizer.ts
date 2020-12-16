@@ -21,6 +21,7 @@ export class Tokenizer {
             lexeme: "",
             line: this.line
         })
+
         return this.tokens
     }
 
@@ -122,6 +123,7 @@ export class Tokenizer {
 
     private advance(advanceBy = 1) {
         this.current += advanceBy
+
         return this.source.charAt(this.current - 1)
     }
 
@@ -139,6 +141,12 @@ export class Tokenizer {
         return this.source.charAt(this.current + peekBy)
     }
 
+    private readWhile(
+        predicate: (char: string) => boolean
+    ) {
+        while (predicate(this.peek())) this.advance()
+    }
+
     private match(expected: string, lowercase = false) {
         if (this.reachedEOF()) return false
 
@@ -153,6 +161,7 @@ export class Tokenizer {
         }
 
         this.current++
+
         return true
     }
 
@@ -185,7 +194,7 @@ export class Tokenizer {
         return /[0-9a-f]/i.test(character)
     }
     private number() {
-        while (this.isDigit(this.peek())) this.advance()
+        this.readWhile(this.isDigit)
 
         if (
             this.match(".") &&
@@ -193,24 +202,20 @@ export class Tokenizer {
         ) {
             this.advance()
 
-            while (this.isDigit(this.peek())) this.advance()
+            this.readWhile(this.isDigit)
         }
         if (this.match("e", true)) {
             if (this.isDigit(this.peekNext())) {
                 this.advance()
 
-                while (this.isDigit(this.peek())) {
-                    this.advance()
-                }
+                this.readWhile(this.isDigit)
             } else if (
                 this.peekNext() === "-" &&
                 this.isDigit(this.peekNext(2))
             ) {
                 this.advance(2)
 
-                while (this.isDigit(this.peek())) {
-                    this.advance()
-                }
+                this.readWhile(this.isDigit)
             }
         }
 
@@ -252,9 +257,7 @@ export class Tokenizer {
             if (this.isBinaryDigit(this.peekNext())) {
                 this.advance()
 
-                while (this.isBinaryDigit(this.peek())) {
-                    this.advance()
-                }
+                this.readWhile(this.isBinaryDigit)
             } else {
                 console.error("Binary digit expected")
             }
@@ -262,9 +265,7 @@ export class Tokenizer {
             if (this.isOctalDigit(this.peekNext())) {
                 this.advance()
 
-                while (this.isOctalDigit(this.peek())) {
-                    this.advance()
-                }
+                this.readWhile(this.isOctalDigit)
             } else {
                 console.error("Octal digit expected")
             }
@@ -272,11 +273,7 @@ export class Tokenizer {
             if (this.isHexadecimalDigit(this.peekNext())) {
                 this.advance()
 
-                while (
-                    this.isHexadecimalDigit(this.peek())
-                ) {
-                    this.advance()
-                }
+                this.readWhile(this.isHexadecimalDigit)
             } else {
                 console.error("Hexadecimal digit expected")
             }
