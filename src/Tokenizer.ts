@@ -33,14 +33,8 @@ export class Tokenizer {
 
         switch (character) {
             case "(":
-                this.addToken({
-                    _type: "leftParen"
-                })
-                break
             case ")":
-                this.addToken({
-                    _type: "rightParen"
-                })
+                this.addToken({ _type: "bracket" })
                 break
             case "{": {
                 if (this.match("-")) {
@@ -51,26 +45,28 @@ export class Tokenizer {
                         this.advance()
                     }
                     this.advance()
-                } else {
-                    this.addToken({
-                        _type: "leftBrace"
-                    })
+
+                    break
                 }
-                break
             }
             case "}":
                 this.addToken({
-                    _type: "rightBrace"
+                    _type: "bracket"
                 })
                 break
+            case "<":
+            case ">": {
+                const _type = this.match("=")
+                    ? "operator"
+                    : "bracket"
+                this.addToken({ _type })
+                break
+            }
             case ",":
-                this.addToken({
-                    _type: "comma"
-                })
-                break
             case ".":
+            case ";":
                 this.addToken({
-                    _type: "dot"
+                    _type: "punctuation"
                 })
                 break
             case "-": {
@@ -81,59 +77,15 @@ export class Tokenizer {
                     ) {
                         this.advance()
                     }
-                } else {
-                    this.addToken({
-                        _type: "minus"
-                    })
                 }
-                break
             }
             case "+":
-                this.addToken({
-                    _type: "plus"
-                })
-                break
-            case ";":
-                this.addToken({
-                    _type: "semicolon"
-                })
-                break
             case "*":
-                this.addToken({
-                    _type: "star"
-                })
-                break
             case "/":
-                this.addToken({
-                    _type: "slash"
-                })
-                break
             case "!": {
-                const _type = this.match("=")
-                    ? "bangEqual"
-                    : "bang"
-                this.addToken({ _type })
-                break
             }
             case "=": {
-                const _type = this.match("=")
-                    ? "equalEqual"
-                    : "equal"
-                this.addToken({ _type })
-                break
-            }
-            case "<": {
-                const _type = this.match("=")
-                    ? "lessEqual"
-                    : "less"
-                this.addToken({ _type })
-                break
-            }
-            case ">": {
-                const _type = this.match("=")
-                    ? "greaterEqual"
-                    : "greater"
-                this.addToken({ _type })
+                this.addToken({ _type: "operator" })
                 break
             }
             case " ":

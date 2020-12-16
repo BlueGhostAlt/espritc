@@ -8,26 +8,10 @@ type NumberKind =
     | "hexadecimal"
 
 export type TokenADT = ADT<{
-    leftParen: {}
-    rightParen: {}
-    leftBrace: {}
-    rightBrace: {}
-    comma: {}
-    dot: {}
-    minus: {}
-    plus: {}
-    semicolon: {}
-    star: {}
-    slash: {}
+    bracket: {}
+    operator: {}
+    punctuation: {}
     eof: {}
-    bangEqual: {}
-    bang: {}
-    equalEqual: {}
-    equal: {}
-    lessEqual: {}
-    less: {}
-    greaterEqual: {}
-    greater: {}
     number:
         | {
               literal: number
