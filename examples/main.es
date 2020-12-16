@@ -15,4 +15,10 @@
 0o644 -- Octal literals
 0x123456789ABCDEF -- Hexadecimal literals
 
+-- BigInt literals
+100n
+0b01111111100000000000000000000000n
+0o644n
+0x123456789ABCDEFn
+
 "hello" -- String literals

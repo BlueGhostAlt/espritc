@@ -248,12 +248,33 @@ export class Tokenizer {
             this.start,
             this.current
         )
+
+        const bigInt = this.peek() === "n"
+        if (bigInt) this.advance()
+
+        if (bigInt) {
+            const literal = BigInt(lexeme)
+            const kind = "decimal"
+
+            return this.addToken({
+                _type: "number",
+                literal,
+                kind,
+                bigInt
+            })
+        }
+
         const literal = Number(lexeme)
         const kind = lexeme.toLowerCase().includes("e")
             ? "exponential"
             : "decimal"
 
-        this.addToken({ _type: "number", literal, kind })
+        this.addToken({
+            _type: "number",
+            literal,
+            kind,
+            bigInt
+        })
     }
 
     private leadingZeroNumber() {
@@ -297,6 +318,28 @@ export class Tokenizer {
             this.start,
             this.current
         )
+
+        const bigInt = this.peek() === "n"
+        if (bigInt) this.advance()
+
+        if (bigInt) {
+            const literal = BigInt(lexeme)
+            const [, secondChar] = lexeme.toLowerCase()
+            const kind =
+                secondChar === "b"
+                    ? "binary"
+                    : secondChar === "o"
+                    ? "octal"
+                    : "hexadecimal"
+
+            return this.addToken({
+                _type: "number",
+                literal,
+                kind,
+                bigInt
+            })
+        }
+
         const literal = Number(lexeme)
         const [, secondChar] = lexeme.toLowerCase()
         const kind =
@@ -306,7 +349,12 @@ export class Tokenizer {
                 ? "octal"
                 : "hexadecimal"
 
-        this.addToken({ _type: "number", literal, kind })
+        this.addToken({
+            _type: "number",
+            literal,
+            kind,
+            bigInt
+        })
     }
 
     private string() {

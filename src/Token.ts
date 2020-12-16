@@ -28,7 +28,17 @@ export type TokenADT = ADT<{
     less: {}
     greaterEqual: {}
     greater: {}
-    number: { literal: number; kind: NumberKind }
+    number:
+        | {
+              literal: number
+              kind: NumberKind
+              bigInt: false
+          }
+        | {
+              literal: bigint
+              kind: NumberKind
+              bigInt: true
+          }
     string: { literal: string }
 }>
 
