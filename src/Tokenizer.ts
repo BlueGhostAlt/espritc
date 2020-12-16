@@ -42,11 +42,22 @@ export class Tokenizer {
                     _type: "rightParen"
                 })
                 break
-            case "{":
-                this.addToken({
-                    _type: "leftBrace"
-                })
+            case "{": {
+                if (this.match("-")) {
+                    while (
+                        !this.match("-") ||
+                        this.peek() !== "}"
+                    ) {
+                        this.advance()
+                    }
+                    this.advance()
+                } else {
+                    this.addToken({
+                        _type: "leftBrace"
+                    })
+                }
                 break
+            }
             case "}":
                 this.addToken({
                     _type: "rightBrace"
