@@ -98,7 +98,14 @@ impl<'a> Tokenizer<'a> {
                 self.add_token(token_type)
             }
             "," | "." | ";" => self.add_token(TokenType::PUNCTUATION),
-            "-" | "+" | "*" | "/" | "!" => self.add_token(TokenType::OPERATOR),
+            "-" => {
+                if self.match_next('-', false) {
+                    self.read_while(|c| c.ne(&'\n'));
+                } else {
+                    self.add_token(TokenType::OPERATOR)
+                }
+            }
+            "+" | "*" | "/" | "!" => self.add_token(TokenType::OPERATOR),
             "=" => {
                 let token_type = if self.match_next('=', false) {
                     TokenType::OPERATOR
@@ -119,6 +126,14 @@ impl<'a> Tokenizer<'a> {
         &self.source[self.current - advance_by..self.current]
     }
 
+    fn peek(&self) -> char {
+        if self.has_reached_eof() {
+            return '\0';
+        }
+
+        self.source.as_bytes()[self.current] as char
+    }
+
     fn match_next(&mut self, expected: char, lowercase: bool) -> bool {
         if self.has_reached_eof() {
             return false;
@@ -134,6 +149,15 @@ impl<'a> Tokenizer<'a> {
 
         self.current += 1;
         true
+    }
+
+    fn read_while<P>(&mut self, predicate: P)
+    where
+        P: Fn(char) -> bool,
+    {
+        while predicate(self.peek()) && !self.has_reached_eof() {
+            self.advance(1);
+        }
     }
 
     fn add_token(&mut self, token_type: TokenType) {
