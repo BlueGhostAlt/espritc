@@ -1,9 +1,9 @@
-fn add(x: f64, y: f64) -> f64 {
-    x + y
-}
+use esprit::run;
+
+use std::fs;
 
 fn main() {
-    let one = 1.0;
+    let input = fs::read_to_string("examples/main.es").unwrap();
 
-    println!("Hello from esprit! PI = {}", add(one, 2.14));
+    run(&input);
 }
