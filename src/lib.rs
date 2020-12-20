@@ -3,6 +3,7 @@ use std::fmt::Display;
 pub enum TokenType {
     BRACKET,
     PUNCTUATION,
+    OPERATOR,
     EOF,
 }
 
@@ -11,6 +12,7 @@ impl Display for TokenType {
         let string = match self {
             TokenType::BRACKET => "Bracket",
             TokenType::PUNCTUATION => "Punctuation",
+            TokenType::OPERATOR => "Operator",
             TokenType::EOF => "EOF",
         };
 
@@ -87,8 +89,24 @@ impl<'a> Tokenizer<'a> {
             "(" | ")" => self.add_token(TokenType::BRACKET),
             "{" => self.add_token(TokenType::BRACKET),
             "}" => self.add_token(TokenType::BRACKET),
-            "<" | ">" => self.add_token(TokenType::BRACKET),
+            "<" | ">" => {
+                let token_type = if self.match_next('=', false) {
+                    TokenType::OPERATOR
+                } else {
+                    TokenType::BRACKET
+                };
+                self.add_token(token_type)
+            }
             "," | "." | ";" => self.add_token(TokenType::PUNCTUATION),
+            "-" | "+" | "*" | "/" | "!" => self.add_token(TokenType::OPERATOR),
+            "=" => {
+                let token_type = if self.match_next('=', false) {
+                    TokenType::OPERATOR
+                } else {
+                    TokenType::BRACKET
+                };
+                self.add_token(token_type)
+            }
             " " | "\r" | "\t" => {}
             "\n" => self.line += 1,
             _ => eprintln!("Unexpected character: {}", character),
@@ -99,6 +117,23 @@ impl<'a> Tokenizer<'a> {
         self.current += advance_by;
 
         &self.source[self.current - advance_by..self.current]
+    }
+
+    fn match_next(&mut self, expected: char, lowercase: bool) -> bool {
+        if self.has_reached_eof() {
+            return false;
+        }
+
+        let character = self.source.as_bytes()[self.current] as char;
+        if !lowercase && character != expected {
+            return false;
+        }
+        if lowercase && character.to_lowercase().eq(expected.to_lowercase()) {
+            return false;
+        }
+
+        self.current += 1;
+        true
     }
 
     fn add_token(&mut self, token_type: TokenType) {
