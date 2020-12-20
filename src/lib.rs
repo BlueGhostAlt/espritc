@@ -6,11 +6,11 @@ pub enum ErrorKind {
     UnknownCharacter,
 }
 
-pub enum TokenType {
-    BRACKET,
-    PUNCTUATION,
-    OPERATOR,
-    EOF,
+pub enum TokenKind {
+    Bracket,
+    Punctuation,
+    Operator,
+    Eof,
 }
 
 pub struct Error<'a, 'b> {
@@ -27,7 +27,7 @@ pub struct Token<'a> {
     lexeme: &'a str,
     line: usize,
     column: usize,
-    token_type: TokenType,
+    kind: TokenKind,
 }
 
 #[allow(dead_code)]
@@ -101,13 +101,13 @@ impl Display for Error<'_, '_> {
     }
 }
 
-impl Display for TokenType {
+impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let string = match self {
-            TokenType::BRACKET => "Bracket",
-            TokenType::PUNCTUATION => "Punctuation",
-            TokenType::OPERATOR => "Operator",
-            TokenType::EOF => "EOF",
+            TokenKind::Bracket => "Bracket",
+            TokenKind::Punctuation => "Punctuation",
+            TokenKind::Operator => "Operator",
+            TokenKind::Eof => "EOF",
         };
 
         write!(f, "{}", string)
@@ -119,7 +119,7 @@ impl Display for Token<'_> {
         write!(
             f,
             "{{ lexeme: \"{}\", position: ({}, {}), token_type: {} }}",
-            self.lexeme, self.line, self.column, self.token_type
+            self.lexeme, self.line, self.column, self.kind
         )
     }
 }
@@ -168,7 +168,7 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
             lexeme: "",
             line: self.line,
             column: 0,
-            token_type: TokenType::EOF,
+            kind: TokenKind::Eof,
         });
 
         Ok(&self.tokens)
@@ -182,32 +182,32 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
         let character = self.advance(1);
 
         let result = match character {
-            "(" | ")" => self.add_token(TokenType::BRACKET),
-            "{" => self.add_token(TokenType::BRACKET),
-            "}" => self.add_token(TokenType::BRACKET),
+            "(" | ")" => self.add_token(TokenKind::Bracket),
+            "{" => self.add_token(TokenKind::Bracket),
+            "}" => self.add_token(TokenKind::Bracket),
             "<" | ">" => {
                 let token_type = if self.match_next('=', false) {
-                    TokenType::OPERATOR
+                    TokenKind::Operator
                 } else {
-                    TokenType::BRACKET
+                    TokenKind::Bracket
                 };
                 self.add_token(token_type)
             }
-            "," | "." | ";" => self.add_token(TokenType::PUNCTUATION),
+            "," | "." | ";" => self.add_token(TokenKind::Punctuation),
             "-" => {
                 if self.match_next('-', false) {
                     self.read_while(|c| c.ne(&'\n'));
                 } else {
-                    self.add_token(TokenType::OPERATOR)
+                    self.add_token(TokenKind::Operator)
                 }
             }
 
-            "+" | "*" | "/" | "!" => self.add_token(TokenType::OPERATOR),
+            "+" | "*" | "/" | "!" => self.add_token(TokenKind::Operator),
             "=" => {
                 let token_type = if self.match_next('=', false) {
-                    TokenType::OPERATOR
+                    TokenKind::Operator
                 } else {
-                    TokenType::BRACKET
+                    TokenKind::Bracket
                 };
                 self.add_token(token_type)
             }
@@ -264,14 +264,14 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
         }
     }
 
-    fn add_token(&mut self, token_type: TokenType) {
+    fn add_token(&mut self, kind: TokenKind) {
         let lexeme = &self.source[self.start..self.current];
 
         let token = Token {
             lexeme,
             line: self.line,
             column: self.column,
-            token_type,
+            kind,
         };
 
         self.column += lexeme.len();
