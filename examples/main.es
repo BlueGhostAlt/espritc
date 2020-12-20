@@ -4,3 +4,5 @@
 .,; -- Punctuation
 (( )) {} < > -- Brackets
 !*+-/=<> <= >= == -- Operators
+
+(( )) { < > } a -- A line with errors

@@ -1,10 +1,104 @@
 use std::fmt::Display;
 
+use colored::Colorize;
+
+pub enum ErrorKind {
+    UnknownCharacter,
+}
+
 pub enum TokenType {
     BRACKET,
     PUNCTUATION,
     OPERATOR,
     EOF,
+}
+
+pub struct Error<'a, 'b> {
+    lexeme: &'a str,
+    line: usize,
+    column: usize,
+    context: &'a str,
+    filename: &'b str,
+    kind: ErrorKind,
+}
+
+#[allow(dead_code)]
+pub struct Token<'a> {
+    lexeme: &'a str,
+    line: usize,
+    column: usize,
+    token_type: TokenType,
+}
+
+#[allow(dead_code)]
+pub struct Tokenizer<'a, 'b> {
+    source: &'a str,
+    filename: &'b str,
+
+    tokens: Vec<Token<'a>>,
+
+    start: usize,
+    current: usize,
+
+    line: usize,
+    column: usize,
+}
+
+impl Display for ErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let string = match self {
+            ErrorKind::UnknownCharacter => "unknown character",
+        };
+
+        write!(f, "{}", string)
+    }
+}
+
+impl Display for Error<'_, '_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}{}{}\n{} {}:{}:{}\n {}\n{} {} {}\n {}{}{}\n\n{}{}\n\n{}{}",
+            "error[E0001]".bright_red(),
+            ": ".bright_white(),
+            format!("{}", self.kind).bright_white(),
+            format!(
+                "{:>line_length$}",
+                "-->",
+                line_length = self.line.to_string().len() + 3
+            )
+            .bright_cyan(),
+            self.filename,
+            self.line,
+            self.column,
+            format!(
+                "{:>line_length$}",
+                "|",
+                line_length = self.line.to_string().len() + 1
+            )
+            .bright_cyan(),
+            self.line.to_string().bright_cyan(),
+            format!(
+                "{:>line_length$}",
+                "|",
+                line_length = self.line.to_string().len()
+            )
+            .bright_cyan(),
+            self.context,
+            format!(
+                "{:>line_length$}",
+                "|",
+                line_length = self.line.to_string().len() + 1
+            )
+            .bright_cyan(),
+            format!("{:>column$}", " ", column = self.column),
+            format!("{:lexeme_length$}", "^", lexeme_length = self.lexeme.len()).bright_red(),
+            "error".bright_red(),
+            ": aborting due to 1 previous error".bright_white(),
+            "error".bright_red(),
+            format!(": could not tokenize `{}`", self.filename).bright_white()
+        )
+    }
 }
 
 impl Display for TokenType {
@@ -20,14 +114,6 @@ impl Display for TokenType {
     }
 }
 
-#[allow(dead_code)]
-pub struct Token<'a> {
-    lexeme: &'a str,
-    line: i32,
-    column: i32,
-    token_type: TokenType,
-}
-
 impl Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
@@ -38,23 +124,31 @@ impl Display for Token<'_> {
     }
 }
 
-#[allow(dead_code)]
-pub struct Tokenizer<'a> {
-    source: &'a str,
-
-    tokens: Vec<Token<'a>>,
-
-    start: usize,
-    current: usize,
-
-    line: i32,
-    column: i32,
+impl<'a, 'b> Error<'a, 'b> {
+    pub fn new(
+        lexeme: &'a str,
+        line: usize,
+        column: usize,
+        context: &'a str,
+        filename: &'b str,
+        kind: ErrorKind,
+    ) -> Error<'a, 'b> {
+        Error {
+            lexeme,
+            line,
+            column,
+            context,
+            filename,
+            kind,
+        }
+    }
 }
 
-impl<'a> Tokenizer<'a> {
-    pub fn new(source: &'a str) -> Tokenizer<'a> {
+impl<'a, 'b> Tokenizer<'a, 'b> {
+    pub fn new(source: &'a str, filename: &'b str) -> Tokenizer<'a, 'b> {
         Tokenizer {
             source,
+            filename,
             tokens: Vec::new(),
             start: 0,
             current: 0,
@@ -63,11 +157,11 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> &Vec<Token<'a>> {
+    pub fn scan_tokens(&'a mut self) -> Result<&'a [Token<'a>], Error<'a, 'b>> {
         while !self.has_reached_eof() {
             self.start = self.current;
 
-            self.scan_token();
+            self.scan_token()?
         }
 
         self.tokens.push(Token {
@@ -77,17 +171,17 @@ impl<'a> Tokenizer<'a> {
             token_type: TokenType::EOF,
         });
 
-        &self.tokens
+        Ok(&self.tokens)
     }
 
     fn has_reached_eof(&self) -> bool {
         self.current >= self.source.len()
     }
 
-    fn scan_token(&mut self) {
+    fn scan_token(&mut self) -> Result<(), Error<'a, 'b>> {
         let character = self.advance(1);
 
-        match character {
+        let result = match character {
             "(" | ")" => self.add_token(TokenType::BRACKET),
             "{" => self.add_token(TokenType::BRACKET),
             "}" => self.add_token(TokenType::BRACKET),
@@ -107,6 +201,7 @@ impl<'a> Tokenizer<'a> {
                     self.add_token(TokenType::OPERATOR)
                 }
             }
+
             "+" | "*" | "/" | "!" => self.add_token(TokenType::OPERATOR),
             "=" => {
                 let token_type = if self.match_next('=', false) {
@@ -117,13 +212,16 @@ impl<'a> Tokenizer<'a> {
                 self.add_token(token_type)
             }
             " " | "\t" => self.column += 1,
+
             "\r" => {}
             "\n" => {
                 self.column = 1;
-                self.line += 1
+                self.line += 1;
             }
-            _ => eprintln!("Unexpected character: {}", character),
-        }
+            _ => Err(self.boo(character))?,
+        };
+
+        Ok(result)
     }
 
     fn advance(&mut self, advance_by: usize) -> &'a str {
@@ -176,16 +274,24 @@ impl<'a> Tokenizer<'a> {
             token_type,
         };
 
-        self.column += lexeme.len() as i32;
+        self.column += lexeme.len();
         self.tokens.push(token);
+    }
+
+    fn boo(&self, lexeme: &'a str) -> Error<'a, 'b> {
+        let line = self.source.lines().nth(self.line - 1).unwrap();
+
+        Error::new(
+            lexeme,
+            self.line,
+            self.column,
+            line,
+            self.filename,
+            ErrorKind::UnknownCharacter,
+        )
     }
 }
 
-pub fn run(source: &str) {
-    let mut tokenizer = Tokenizer::new(source);
-    let tokens = tokenizer.scan_tokens();
-
-    for token in tokens {
-        println!("{}", token);
-    }
+pub fn run<'a>(tokenizer: &'a mut Tokenizer<'a, 'a>) -> Result<&'a [Token<'a>], Error<'a, 'a>> {
+    tokenizer.scan_tokens()
 }
