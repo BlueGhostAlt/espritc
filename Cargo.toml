@@ -1,5 +1,5 @@
 [package]
-name = "esprit"
+name = "espritc"
 version = "0.1.0"
 authors = ["BlueGhostGH <engisoftleaderoff@gmail.com>"]
 edition = "2018"

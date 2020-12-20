@@ -1,4 +1,4 @@
-use esprit::run;
+use espritc::run;
 
 use std::{env, fs};
 
