@@ -1,12 +1,16 @@
+use std::fmt::Display;
+
 pub enum TokenType {
     BRACKET,
+    PUNCTUATION,
     EOF,
 }
 
-impl std::fmt::Display for TokenType {
+impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let string = match self {
             TokenType::BRACKET => "Bracket",
+            TokenType::PUNCTUATION => "Punctuation",
             TokenType::EOF => "EOF",
         };
 
@@ -21,7 +25,7 @@ pub struct Token<'a> {
     token_type: TokenType,
 }
 
-impl std::fmt::Display for Token<'_> {
+impl Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
@@ -73,7 +77,6 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn has_reached_eof(&self) -> bool {
-        println!("current: {}, len(): {}", self.current, self.source.len());
         self.current >= self.source.len()
     }
 
@@ -85,6 +88,7 @@ impl<'a> Tokenizer<'a> {
             "{" => self.add_token(TokenType::BRACKET),
             "}" => self.add_token(TokenType::BRACKET),
             "<" | ">" => self.add_token(TokenType::BRACKET),
+            "," | "." | ";" => self.add_token(TokenType::PUNCTUATION),
             " " | "\r" | "\t" => {}
             "\n" => self.line += 1,
             _ => eprintln!("Unexpected character: {}", character),
