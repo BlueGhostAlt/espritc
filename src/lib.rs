@@ -82,6 +82,9 @@ impl<'a> Tokenizer<'a> {
 
         match character {
             "(" | ")" => self.add_token(TokenType::BRACKET),
+            "{" => self.add_token(TokenType::BRACKET),
+            "}" => self.add_token(TokenType::BRACKET),
+            "<" | ">" => self.add_token(TokenType::BRACKET),
             " " | "\r" | "\t" => {}
             "\n" => self.line += 1,
             _ => eprintln!("Unexpected character: {}", character),
