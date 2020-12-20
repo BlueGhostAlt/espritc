@@ -24,6 +24,7 @@ impl Display for TokenType {
 pub struct Token<'a> {
     lexeme: &'a str,
     line: i32,
+    column: i32,
     token_type: TokenType,
 }
 
@@ -31,8 +32,8 @@ impl Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "{{ lexeme: \"{}\", line: {}, token_type: {} }}",
-            self.lexeme, self.line, self.token_type
+            "{{ lexeme: \"{}\", position: ({}, {}), token_type: {} }}",
+            self.lexeme, self.line, self.column, self.token_type
         )
     }
 }
@@ -72,6 +73,7 @@ impl<'a> Tokenizer<'a> {
         self.tokens.push(Token {
             lexeme: "",
             line: self.line,
+            column: 0,
             token_type: TokenType::EOF,
         });
 
@@ -114,8 +116,12 @@ impl<'a> Tokenizer<'a> {
                 };
                 self.add_token(token_type)
             }
-            " " | "\r" | "\t" => {}
-            "\n" => self.line += 1,
+            " " | "\t" => self.column += 1,
+            "\r" => {}
+            "\n" => {
+                self.column = 1;
+                self.line += 1
+            }
             _ => eprintln!("Unexpected character: {}", character),
         }
     }
@@ -166,9 +172,11 @@ impl<'a> Tokenizer<'a> {
         let token = Token {
             lexeme,
             line: self.line,
+            column: self.column,
             token_type,
         };
 
+        self.column += lexeme.len() as i32;
         self.tokens.push(token);
     }
 }
