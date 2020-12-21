@@ -6,11 +6,23 @@ pub enum ErrorKind {
     UnknownCharacter,
 }
 
+#[derive(Debug)]
+pub enum NumberKind {
+    Decimal,
+}
+
+#[derive(Debug)]
+pub enum NumberType {
+    Regular(f64, NumberKind),
+}
+
+#[derive(Debug)]
 pub enum TokenKind {
     Bracket,
     Punctuation,
     Operator,
     Eof,
+    Number(NumberType),
 }
 
 pub struct Error<'a, 'b> {
@@ -22,7 +34,7 @@ pub struct Error<'a, 'b> {
     kind: ErrorKind,
 }
 
-#[allow(dead_code)]
+#[derive(Debug)]
 pub struct Token<'a> {
     lexeme: &'a str,
     line: usize,
@@ -101,29 +113,6 @@ impl Display for Error<'_, '_> {
     }
 }
 
-impl Debug for TokenKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let string = match self {
-            TokenKind::Bracket => "Bracket",
-            TokenKind::Punctuation => "Punctuation",
-            TokenKind::Operator => "Operator",
-            TokenKind::Eof => "EOF",
-        };
-
-        write!(f, "{}", string)
-    }
-}
-
-impl Debug for Token<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
-            f,
-            "{{ lexeme: \"{}\", position: ({}, {}), kind: {:?} }}",
-            self.lexeme, self.line, self.column, self.kind
-        )
-    }
-}
-
 impl<'a, 'b> Error<'a, 'b> {
     pub fn new(
         lexeme: &'a str,
@@ -181,9 +170,9 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
     fn scan_token(&mut self) -> Result<(), Error<'a, 'b>> {
         let character = self.advance(1);
 
-        let result = match character {
-            "(" | ")" => self.add_token(TokenKind::Bracket),
-            "{" => {
+        let result = match character.chars().next().unwrap() {
+            '(' | ')' => self.add_token(TokenKind::Bracket),
+            '{' => {
                 if self.match_next('-', false) {
                     while !self.match_next_multiple("-}", false) {
                         self.advance(1);
@@ -192,8 +181,8 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
                     self.add_token(TokenKind::Bracket)
                 }
             }
-            "}" => self.add_token(TokenKind::Bracket),
-            "<" | ">" => {
+            '}' => self.add_token(TokenKind::Bracket),
+            '<' | '>' => {
                 let kind = if self.match_next('=', false) {
                     TokenKind::Operator
                 } else {
@@ -201,8 +190,8 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
                 };
                 self.add_token(kind)
             }
-            "," | "." | ";" => self.add_token(TokenKind::Punctuation),
-            "-" => {
+            ',' | '.' | ';' => self.add_token(TokenKind::Punctuation),
+            '-' => {
                 if self.match_next('-', false) {
                     self.read_while(|c| c.ne(&'\n'));
                 } else {
@@ -210,8 +199,8 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
                 }
             }
 
-            "+" | "*" | "/" | "!" => self.add_token(TokenKind::Operator),
-            "=" => {
+            '+' | '*' | '/' | '!' => self.add_token(TokenKind::Operator),
+            '=' => {
                 let kind = if self.match_next('=', false) {
                     TokenKind::Operator
                 } else {
@@ -219,10 +208,11 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
                 };
                 self.add_token(kind)
             }
-            " " | "\t" => self.column += 1,
+            '0'..='9' => self.number(),
+            ' ' | '\t' => self.column += 1,
 
-            "\r" => {}
-            "\n" => {
+            '\r' => {}
+            '\n' => {
                 self.column = 1;
                 self.line += 1;
             }
@@ -290,6 +280,17 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
 
         self.column += lexeme.len();
         self.tokens.push(token);
+    }
+
+    fn number(&mut self) {
+        self.read_while(|c| c.is_digit(10));
+
+        let lexeme = &self.source[self.start..self.current];
+        let _bigint = false;
+        let literal = lexeme.parse::<f64>().unwrap();
+        let kind = NumberKind::Decimal;
+
+        self.add_token(TokenKind::Number(NumberType::Regular(literal, kind)));
     }
 
     fn boo(&self, lexeme: &'a str) -> Error<'a, 'b> {
