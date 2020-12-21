@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 use colored::Colorize;
 
@@ -101,7 +101,7 @@ impl Display for Error<'_, '_> {
     }
 }
 
-impl Display for TokenKind {
+impl Debug for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let string = match self {
             TokenKind::Bracket => "Bracket",
@@ -114,11 +114,11 @@ impl Display for TokenKind {
     }
 }
 
-impl Display for Token<'_> {
+impl Debug for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "{{ lexeme: \"{}\", position: ({}, {}), token_type: {} }}",
+            "{{ lexeme: \"{}\", position: ({}, {}), kind: {:?} }}",
             self.lexeme, self.line, self.column, self.kind
         )
     }
@@ -183,15 +183,23 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
 
         let result = match character {
             "(" | ")" => self.add_token(TokenKind::Bracket),
-            "{" => self.add_token(TokenKind::Bracket),
+            "{" => {
+                if self.match_next('-', false) {
+                    while !self.match_next_multiple("-}", false) {
+                        self.advance(1);
+                    }
+                } else {
+                    self.add_token(TokenKind::Bracket)
+                }
+            }
             "}" => self.add_token(TokenKind::Bracket),
             "<" | ">" => {
-                let token_type = if self.match_next('=', false) {
+                let kind = if self.match_next('=', false) {
                     TokenKind::Operator
                 } else {
                     TokenKind::Bracket
                 };
-                self.add_token(token_type)
+                self.add_token(kind)
             }
             "," | "." | ";" => self.add_token(TokenKind::Punctuation),
             "-" => {
@@ -204,12 +212,12 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
 
             "+" | "*" | "/" | "!" => self.add_token(TokenKind::Operator),
             "=" => {
-                let token_type = if self.match_next('=', false) {
+                let kind = if self.match_next('=', false) {
                     TokenKind::Operator
                 } else {
                     TokenKind::Bracket
                 };
-                self.add_token(token_type)
+                self.add_token(kind)
             }
             " " | "\t" => self.column += 1,
 
@@ -253,6 +261,12 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
 
         self.current += 1;
         true
+    }
+
+    fn match_next_multiple(&mut self, expected: &str, lowercase: bool) -> bool {
+        expected
+            .chars()
+            .all(|character| self.match_next(character, lowercase))
     }
 
     fn read_while<P>(&mut self, predicate: P)

@@ -15,7 +15,7 @@ fn main() {
     match tokens {
         Ok(tokens) => {
             for token in tokens {
-                println!("{}", token);
+                println!("{:?}", token);
             }
         }
         Err(err) => {
