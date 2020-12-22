@@ -248,7 +248,7 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
         if lowercase
             && character
                 .to_ascii_lowercase()
-                .eq(&expected.to_ascii_lowercase())
+                .ne(&expected.to_ascii_lowercase())
         {
             return false;
         }
@@ -309,10 +309,21 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
                 self.read_while(|c| c.is_ascii_digit())
             }
         }
+        if self.match_next('e', true) {
+            if self.match_next_predicate(|c| c.is_ascii_digit()) {
+                self.read_while(|c| c.is_ascii_digit())
+            } else if self.match_next('-', false)
+                && self.match_next_predicate(|c| c.is_ascii_digit())
+            {
+                self.read_while(|c| c.is_ascii_digit())
+            }
+        }
 
         let lexeme = &self.source[self.start..self.current];
+
         let _bigint = false;
         let literal = lexeme.parse::<f64>().unwrap();
+
         let kind = NumberKind::Decimal;
 
         self.add_token(TokenKind::Number(NumberType::Regular(literal, kind)));

@@ -15,4 +15,9 @@
 
 100.7; -- Number literals
 
+-- Exponential literals
+10.07e1;
+1.007e2;
+100700e-3;
+
 -- (( )) { < > } a A line with errors
