@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Display};
 
 use colored::Colorize;
+use num_bigint::BigInt;
 
 pub enum ErrorKind {
     UnknownCharacter,
@@ -9,11 +10,13 @@ pub enum ErrorKind {
 #[derive(Debug)]
 pub enum NumberKind {
     Decimal,
+    Exponential,
 }
 
 #[derive(Debug)]
 pub enum NumberType {
     Regular(f64, NumberKind),
+    BigInt(BigInt, NumberKind),
 }
 
 #[derive(Debug)]
@@ -321,10 +324,22 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
 
         let lexeme = &self.source[self.start..self.current];
 
-        let _bigint = false;
+        let bigint = self.match_next('n', false);
+
+        if bigint {
+            let literal = lexeme.parse::<BigInt>().unwrap();
+            let kind = NumberKind::Decimal;
+
+            return self.add_token(TokenKind::Number(NumberType::BigInt(literal, kind)));
+        }
+
         let literal = lexeme.parse::<f64>().unwrap();
 
-        let kind = NumberKind::Decimal;
+        let kind = if lexeme.to_ascii_lowercase().contains('e') {
+            NumberKind::Exponential
+        } else {
+            NumberKind::Decimal
+        };
 
         self.add_token(TokenKind::Number(NumberType::Regular(literal, kind)));
     }

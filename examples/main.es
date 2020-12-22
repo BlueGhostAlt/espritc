@@ -20,4 +20,7 @@
 1.007e2;
 100700e-3;
 
+-- BigInt literals
+1007n;
+
 -- (( )) { < > } a A line with errors
