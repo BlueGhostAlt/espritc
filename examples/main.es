@@ -13,6 +13,6 @@
 (( )) {} < > -- Brackets
 !*+-/=<> <= >= == -- Operators
 
-100
+100.7; -- Number literals
 
 -- (( )) { < > } a A line with errors

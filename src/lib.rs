@@ -245,7 +245,28 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
         if !lowercase && character != expected {
             return false;
         }
-        if lowercase && character.to_lowercase().eq(expected.to_lowercase()) {
+        if lowercase
+            && character
+                .to_ascii_lowercase()
+                .eq(&expected.to_ascii_lowercase())
+        {
+            return false;
+        }
+
+        self.current += 1;
+        true
+    }
+
+    fn match_next_predicate<P>(&mut self, predicate: P) -> bool
+    where
+        P: Fn(char) -> bool,
+    {
+        if self.has_reached_eof() {
+            return false;
+        }
+
+        let character = self.source.as_bytes()[self.current] as char;
+        if !predicate(character) {
             return false;
         }
 
@@ -254,9 +275,7 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
     }
 
     fn match_next_multiple(&mut self, expected: &str, lowercase: bool) -> bool {
-        expected
-            .chars()
-            .all(|character| self.match_next(character, lowercase))
+        expected.chars().all(|c| self.match_next(c, lowercase))
     }
 
     fn read_while<P>(&mut self, predicate: P)
@@ -283,7 +302,13 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
     }
 
     fn number(&mut self) {
-        self.read_while(|c| c.is_digit(10));
+        self.read_while(|c| c.is_ascii_digit());
+
+        if self.match_next('.', false) {
+            if self.match_next_predicate(|c| c.is_ascii_digit()) {
+                self.read_while(|c| c.is_ascii_digit())
+            }
+        }
 
         let lexeme = &self.source[self.start..self.current];
         let _bigint = false;
