@@ -8,24 +8,13 @@ pub enum ErrorKind {
 }
 
 #[derive(Debug)]
-pub enum NumberKind {
-    Decimal,
-    Exponential,
-}
-
-#[derive(Debug)]
-pub enum NumberType {
-    Regular(f64, NumberKind),
-    BigInt(BigInt, NumberKind),
-}
-
-#[derive(Debug)]
 pub enum TokenKind {
     Bracket,
     Punctuation,
     Operator,
     Eof,
-    Number(NumberType),
+    Number(f64),
+    BigInt(BigInt),
 }
 
 pub struct Error<'a, 'b> {
@@ -328,20 +317,13 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
 
         if bigint {
             let literal = lexeme.parse::<BigInt>().unwrap();
-            let kind = NumberKind::Decimal;
 
-            return self.add_token(TokenKind::Number(NumberType::BigInt(literal, kind)));
+            return self.add_token(TokenKind::BigInt(literal));
         }
 
         let literal = lexeme.parse::<f64>().unwrap();
 
-        let kind = if lexeme.to_ascii_lowercase().contains('e') {
-            NumberKind::Exponential
-        } else {
-            NumberKind::Decimal
-        };
-
-        self.add_token(TokenKind::Number(NumberType::Regular(literal, kind)));
+        self.add_token(TokenKind::Number(literal));
     }
 
     fn boo(&self, lexeme: &'a str) -> Error<'a, 'b> {
