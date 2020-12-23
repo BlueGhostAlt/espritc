@@ -1,10 +1,11 @@
 use std::fmt::{Debug, Display};
 
 use colored::Colorize;
-use num_bigint::BigInt;
+use num_bigint::{BigInt, ToBigInt};
 
 pub enum ErrorKind {
     UnknownCharacter,
+    ExpectedDigit,
 }
 
 #[derive(Debug)]
@@ -51,6 +52,7 @@ pub struct Tokenizer<'a, 'b> {
 impl Display for ErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let string = match self {
+            ErrorKind::ExpectedDigit => "expected digit",
             ErrorKind::UnknownCharacter => "unknown character",
         };
 
@@ -200,7 +202,8 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
                 };
                 self.add_token(kind)
             }
-            '0'..='9' => self.number(),
+            '0' => self.leading_zero_number()?,
+            '1'..='9' => self.number()?,
             ' ' | '\t' => self.column += 1,
 
             '\r' => {}
@@ -208,7 +211,7 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
                 self.column = 1;
                 self.line += 1;
             }
-            _ => Err(self.boo(character))?,
+            _ => Err(self.boo(character, ErrorKind::UnknownCharacter))?,
         };
 
         Ok(result)
@@ -226,6 +229,14 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
         }
 
         self.source.as_bytes()[self.current] as char
+    }
+
+    fn peek_str(&self, length: usize) -> &'a str {
+        if self.has_reached_eof() {
+            return "";
+        }
+
+        &self.source[self.current..self.current + length]
     }
 
     fn match_next(&mut self, expected: char, lowercase: bool) -> bool {
@@ -293,7 +304,7 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
         self.tokens.push(token);
     }
 
-    fn number(&mut self) {
+    fn number(&mut self) -> Result<(), Error<'a, 'b>> {
         self.read_while(|c| c.is_ascii_digit());
 
         if self.match_next('.', false) {
@@ -314,29 +325,80 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
         let lexeme = &self.source[self.start..self.current];
 
         let bigint = self.match_next('n', false);
-
         if bigint {
             let literal = lexeme.parse::<BigInt>().unwrap();
 
-            return self.add_token(TokenKind::BigInt(literal));
+            self.add_token(TokenKind::BigInt(literal));
+
+            return Ok(());
         }
 
         let literal = lexeme.parse::<f64>().unwrap();
 
         self.add_token(TokenKind::Number(literal));
+
+        Ok(())
     }
 
-    fn boo(&self, lexeme: &'a str) -> Error<'a, 'b> {
+    fn leading_zero_number(&mut self) -> Result<(), Error<'a, 'b>> {
+        if self.match_next('b', true) {
+            if self.match_next_predicate(|c| c.is_digit(2)) {
+                self.read_while(|c| c.is_digit(2))
+            } else {
+                return Err(self.boo(self.peek_str(1), ErrorKind::ExpectedDigit));
+            }
+        } else if self.match_next('o', true) {
+            if self.match_next_predicate(|c| c.is_digit(8)) {
+                self.read_while(|c| c.is_digit(8))
+            } else {
+                return Err(self.boo(self.peek_str(1), ErrorKind::ExpectedDigit));
+            }
+        } else if self.match_next('x', false) {
+            if self.match_next_predicate(|c| c.is_digit(16)) {
+                self.read_while(|c| c.is_digit(16))
+            } else {
+                return Err(self.boo(self.peek_str(1), ErrorKind::ExpectedDigit));
+            }
+        } else {
+            return self.number();
+        }
+
+        let lexeme = &self.source[self.start..self.current];
+
+        let second_char = lexeme.to_ascii_lowercase().chars().nth(1).unwrap();
+
+        let bigint = self.match_next('n', false);
+        if bigint {
+            let literal = match second_char {
+                'b' => u64::from_str_radix(&lexeme[2..], 2),
+                'o' => u64::from_str_radix(&lexeme[2..], 8),
+                _ => u64::from_str_radix(&lexeme[2..], 16),
+            }
+            .unwrap()
+            .to_bigint()
+            .unwrap();
+
+            self.add_token(TokenKind::BigInt(literal));
+
+            return Ok(());
+        }
+
+        let literal = match second_char {
+            'b' => u64::from_str_radix(&lexeme[2..], 2),
+            'o' => u64::from_str_radix(&lexeme[2..], 8),
+            _ => u64::from_str_radix(&lexeme[2..], 16),
+        }
+        .unwrap() as f64;
+
+        self.add_token(TokenKind::Number(literal));
+
+        Ok(())
+    }
+
+    fn boo(&self, lexeme: &'a str, kind: ErrorKind) -> Error<'a, 'b> {
         let line = self.source.lines().nth(self.line - 1).unwrap();
 
-        Error::new(
-            lexeme,
-            self.line,
-            self.column,
-            line,
-            self.filename,
-            ErrorKind::UnknownCharacter,
-        )
+        Error::new(lexeme, self.line, self.column, line, self.filename, kind)
     }
 }
 
