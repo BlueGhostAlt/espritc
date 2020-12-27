@@ -4,8 +4,8 @@ use colored::Colorize;
 use num_bigint::{BigInt, ToBigInt};
 
 pub enum ErrorKind {
-    UnknownCharacter,
     ExpectedDigit,
+    UnknownCharacter,
 }
 
 #[derive(Debug)]
@@ -307,9 +307,14 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
     fn number(&mut self) -> Result<(), Error<'a, 'b>> {
         self.read_while(|c| c.is_ascii_digit());
 
+        let mut has_fractional_part = false;
+
         if self.match_next('.', false) {
             if self.match_next_predicate(|c| c.is_ascii_digit()) {
+                has_fractional_part = true;
                 self.read_while(|c| c.is_ascii_digit())
+            } else {
+                self.current -= 1;
             }
         }
         if self.match_next('e', true) {
@@ -324,7 +329,11 @@ impl<'a, 'b> Tokenizer<'a, 'b> {
 
         let lexeme = &self.source[self.start..self.current];
 
-        let bigint = self.match_next('n', false);
+        let bigint = if has_fractional_part {
+            false
+        } else {
+            self.match_next('n', false)
+        };
         if bigint {
             let literal = lexeme.parse::<BigInt>().unwrap();
 
